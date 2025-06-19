@@ -6,6 +6,16 @@ let hasPulledProjects = false;
 let outputQueue = [];
 let isPrinting = false;
 
+const githubMap = {
+  "CampNav": "CampNav",
+  "semantic_AI_Movie_Rec": "Semantic_AI_Movie_Recommender",
+  "Flight_DBMS": "Flight_DBMS",
+  "5G_Satellite_Research": "WINLAB_research",
+  "PDF_Things": "PDF_Things",
+  "portfolio": "portfolio"
+};
+
+
 window.onload = function () {
   const welcomeMessage = [
     "Welcome to Nihal's interactive terminal!",
@@ -95,8 +105,8 @@ function handleCommand(input) {
   const helpLines = [
     "<strong>help</strong>                Show this help message.",
     "<strong>ls</strong>                  List files and folders in the current directory.",
-    "<strong>ls &lt;folder&gt;</strong>       List contents of a specific folder (e.g., ls projects).",
-    "<strong>cd &lt;folder&gt;</strong>       Change directory (e.g., cd artworks).",
+    "<strong>ls &lt;folder&gt;</strong>         List contents of a specific folder (e.g., ls projects).",
+    "<strong>cd &lt;folder&gt;</strong>         Change directory (e.g., cd artworks).",
     "<strong>cd</strong>                  Return to root (~) directory.",
     "<strong>clear</strong>               Clear the terminal screen.",
     "<strong>sudo hire me</strong>        Download my resume (with sudo flair).",
@@ -136,19 +146,29 @@ const formatted = contents.map(item => {
   printRawHTMLToTerminal(
     `<span class="legend">📘 <span class="file-folder">[blue]</span>=folder, 📄 <span class="file-text">[white]</span>=file</span>`
   );
+  if (lsKey.startsWith("projects/")) {
+  const folderName = lsKey.split("/")[1];
+  const repoSlug = githubMap[folderName];
+  if (repoSlug) {
+    const githubURL = `https://github.com/NihalShah345/${repoSlug}`;
+    printRawHTMLToTerminal(
+      `<span class="git-link">🔗 GitHub: <a href="${githubURL}" target="_blank">${githubURL}</a></span>`
+    );
+  }
+}
+
   break;
 
 
 
-
-    case "cd":
-      if (arg === "..") {
-  if (currentPath === "~") return; // already at root
-  currentPath = currentPath.slice(0, currentPath.lastIndexOf("/"));
-  if (currentPath === "~" || currentPath === "") currentPath = "~";
-  updatePrompt();
-  return;
-}
+case "cd":
+  if (arg === "..") {
+    if (currentPath === "~") return;
+    currentPath = currentPath.slice(0, currentPath.lastIndexOf("/"));
+    if (currentPath === "" || currentPath === "~") currentPath = "~";
+    updatePrompt();
+    return;
+  }
 
   if (!arg) {
     currentPath = "~";
@@ -156,34 +176,62 @@ const formatted = contents.map(item => {
     return;
   }
 
-  const currentDir = currentPath.replace(/^~\//, "").replace(/^~$/, "");
-  const target = currentDir ? `${currentDir}/${arg}` : arg;
-  const pathParts = target.split("/");
+  const currentKey = currentPath === "~" ? "~" : currentPath.replace(/^~\//, "");
+  const children = fileSystem[currentKey];
 
-  let temp = "~";
-  let valid = true;
-
-  for (let i = 0; i < pathParts.length; i++) {
-    const segment = pathParts[i];
-    const folderList = temp === "~"
-      ? fileSystem["~"]
-      : fileSystem[temp.split("/").slice(1).join("/")];
-
-    if (folderList && folderList.includes(segment)) {
-      temp = temp === "~" ? `~/${segment}` : `${temp}/${segment}`;
-    } else {
-      valid = false;
-      break;
-    }
+  if (!children || !children.includes(arg)) {
+    printToTerminal("cd: no such directory");
+    return;
   }
 
-  if (valid) {
-    currentPath = temp;
-    updatePrompt();
-  } else {
-    printToTerminal("No such directory.");
+  const fullPath = currentKey === "~" ? arg : `${currentKey}/${arg}`;
+  const isDirectory = fileSystem[fullPath] && Array.isArray(fileSystem[fullPath]);
+
+  if (!isDirectory) {
+    printToTerminal(`cd: not a directory: ${arg}`);
+    return;
   }
+
+  currentPath = `~/${fullPath}`;
+  updatePrompt();
   break;
+
+  case "cat":
+  if (!arg) {
+    printToTerminal("cat: missing file operand");
+    return;
+  }
+
+  const fileContextKey = currentPath === "~" ? "~" : currentPath.replace(/^~\//, "");
+  const filecontents = fileSystem[fileContextKey];
+
+  if (!filecontents || !filecontents.includes(arg)) {
+    printToTerminal(`cat: ${arg}: No such file`);
+    return;
+  }
+
+  // Build file path
+  let assetPath = "assets/";
+  if (fileContextKey !== "~") {
+    assetPath += fileContextKey + "/";
+  }
+  assetPath += arg;
+
+  fetch(assetPath)
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return response.text();
+    })
+    .then(text => {
+      printToTerminal(`📄 Contents of ${arg}:\n`);
+      printToTerminal(text);
+    })
+    .catch(err => {
+      printToTerminal(`cat: cannot read file: ${arg}`);
+    });
+  break;
+
+
 
     case "git":
   if ((arg === "clone" || arg == "pull") && parts[2]) {
@@ -191,33 +239,78 @@ const formatted = contents.map(item => {
       printToTerminal("Already up to date.");
       return;
     }
+printToTerminal("Cloning into 'projects'...");
 
-    printToTerminal("Cloning into 'projects'...");
+const steps = [
+  "<span class='git-clone-step'>remote: Enumerating objects: 7, done.</span>",
+  "<span class='git-clone-step'>remote: Counting objects: 100% (7/7), done.</span>",
+  "<span class='git-clone-step'>remote: Compressing objects: 100% (4/4), done.</span>",
+  "<span class='git-clone-step'>remote: Total 7 (delta 0), reused 7 (delta 0)</span>",
+  "<span class='git-clone-step'>Unpacking objects: 100% (7/7), done.</span>",
+  "<span class='git-success'>✔ Projects successfully pulled.</span>",
+  `<span class="git-link">View my Github repos: <a href="https://github.com/NihalShah345?tab=repositories" target="_blank">https://github.com/NihalShah345?tab=repositories</a></span>`
+];
 
-    const steps = [
-      "<span class='git-clone-step'>remote: Enumerating objects: 5, done.</span>",
-      "<span class='git-clone-step'>remote: Counting objects: 100% (5/5), done.</span>",
-      "<span class='git-clone-step'>remote: Compressing objects: 100% (3/3), done.</span>",
-      "<span class='git-clone-step'>remote: Total 5 (delta 0), reused 5 (delta 0)</span>",
-      "<span class='git-clone-step'>Unpacking objects: 100% (5/5), done.</span>",
-      "<span class='git-success'>✔ Projects successfully pulled.</span>",
-      `<span class="git-link">View my Github repos: <a href="https://github.com/NihalShah345?tab=repositories" target="_blank">https://github.com/NihalShah345?tab=repositories</a></span>`
-    ];
+let delay = 500;
+steps.forEach((line, i) => {
+  setTimeout(() => {
+    printHTMLToTerminal(line);
+    if (i === steps.length - 2) {
+      hasPulledProjects = true;
+      fileSystem["projects"] = [
+        "CampNav",
+        "Semantic_AI_Movie_Rec",
+        "Flight_DBMS",
+        "5G_Satellite_Research",
+        "PDF_Things",
+        "portfolio"
+      ];
 
-    let delay = 500;
-    steps.forEach((line, i) => {
-      setTimeout(() => {
-        printHTMLToTerminal(line);
-        if (i === steps.length - 2) {
-          hasPulledProjects = true;
-          fileSystem["projects"] = ["CampNav", "Semantic_AI_Movie_Recommender", "Flight_Reservation_System", "5G_Satellite_Project", "PDF_Things"];
-        }
-      }, delay * (i + 1));
-    });
+      fileSystem["projects/CampNav"] = ["README.md", "demo.mp4", "github.txt"];
+      fileSystem["projects/Semantic_AI_Movie_Rec"] = ["README.md", "demo.mp4", "github.txt"];
+      fileSystem["projects/Flight_DBMS"] = ["README.md", "demo.mp4", "github.txt"];
+      fileSystem["projects/5G_Satellite_Research"] = ["README.md", "demo.mp4", "github.txt"];
+      fileSystem["projects/PDF_Things"] = ["README.md", "demo.mp4", "github.txt"];
+      fileSystem["projects/portfolio"] = ["README.md", "demo.mp4", "github.txt"];
+    }
+  }, delay * (i + 1));
+});
+
   } else {
     printToTerminal("fatal: remote repository not found.");
   }
   break;
+case "play":
+  if (!arg) {
+    printToTerminal("play: missing file operand");
+    return;
+  }
+
+  // Strip "~/", result is "projects/CampNav"
+  let pathKey = currentPath.replace(/^~\//, "");
+  if (!fileSystem[pathKey] || !fileSystem[pathKey].includes(arg)) {
+    printToTerminal(`play: ${arg}: No such file`);
+    return;
+  }
+
+  // Expect structure: assets/projects/<project-name>/demo.mp4
+  const projectName = pathKey.split("/")[1]; // CampNav, Flight_DBMS, etc.
+  const videoPath = `assets/projects/${projectName}/${arg}`;
+
+  const videoHTML = `
+    <div style="margin-top: 10px;">
+      <video width="480" controls>
+        <source src="${videoPath}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  `;
+
+  printToTerminal(`▶️ Playing ${arg}...`);
+  printRawHTMLToTerminal(videoHTML);
+  break;
+
+
 
 
 
