@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Portfolio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Hello, I'm Nihal</h1>
+
+  <div id="guiView">
+    <p>Try using this Linux terminal to get a deeper insight about me!</p>
+    <p>You can explore my projects, as well as my passions and endeavors</p>
+  </div>
+
+  <div id="terminalView">
+    <pre id="terminalOutput"></pre>
+    <div id="terminalInputWrapper">
+      <span class="prompt" id="terminalPrompt">root@nihals_world:~$</span>
+      
+      <div id="terminalInput" contenteditable="true" spellcheck="false"></div>
+    </div>
+  </div>
+
+  <script src="assets/filesystem.js"></script>
+  <script src="script.js"></script>
+</html>
